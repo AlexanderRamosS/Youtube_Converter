@@ -1,3 +1,4 @@
+#arquivo de configuração do cx_freeze para compilação do projeto e criação do .exe
 import sys
 from cx_Freeze import setup, Executable
 
