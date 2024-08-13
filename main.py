@@ -1,12 +1,13 @@
 import os
 import sys
 import re
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QProgressBar
 from PyQt5.QtCore import QThread, pyqtSignal
 from yt_dlp import YoutubeDL
 
-class DownloadThread(QThread):
+
+class DownloadThread(QThread): #Classe da thread para a barra de progressão do download
     progress_changed = pyqtSignal(int)
     finished = pyqtSignal(str)
 
@@ -15,8 +16,8 @@ class DownloadThread(QThread):
         self.url = url
         self.output_path = output_path
         self.format_type = format_type
-
-    def run(self):
+    
+    def run(self): #Função para converter o video para mp3 ou mp4
         ydl_opts = {
             'format': 'bestaudio/best' if self.format_type == 'MP3' else 'bestvideo+bestaudio/best',
             'outtmpl': self.output_path,
@@ -35,55 +36,54 @@ class DownloadThread(QThread):
 
         try:
             with YoutubeDL(ydl_opts) as ydl:
-                ydl.download([self.url])
+                ydl.download([self.url]) #Faz o download do youtube
             self.finished.emit(f"Arquivo salvo em: {self.output_path}")
         except Exception as e:
             self.finished.emit(f"Erro: {e}")
-
-    def progress_hook(self, d):
+    
+    def progress_hook(self, d): #Função da barra de progressão
         if d['status'] == 'downloading':
-            # Extrai o percentual do progresso, removendo caracteres ANSI
             percent_str = d['_percent_str']
-            clean_percent_str = re.sub(r'\x1b\[[0-9;]*m', '', percent_str).strip('% ')
+            clean_percent_str = re.sub(r'\x1b\[[0-9;]*m', '', percent_str).strip('% ') # Extrai o percentual do progresso, removendo caracteres ANSI
             try:
                 percent = float(clean_percent_str)
                 self.progress_changed.emit(int(percent))
             except ValueError:
                 pass  # Em caso de falha na conversão, não atualize a barra de progresso
 
-class YouTubeToMP3Converter(QtWidgets.QWidget):
+class YouTubeToMP3Converter(QtWidgets.QWidget): #Classe para a interface grafica
     def __init__(self):
         super().__init__()
         self.initUI()
     
-    def initUI(self):
-        self.setWindowTitle('YouTube to MP3/MP4 Converter')
+    def initUI(self): #Função do layout
+        self.setWindowTitle('YouTube to MP3/MP4 Converter') #Principal
         self.setGeometry(100, 100, 500, 150)
 
         layout = QtWidgets.QVBoxLayout()
 
-        form_layout = QtWidgets.QFormLayout()
+        form_layout = QtWidgets.QFormLayout() #Caixa de pesquisa
         self.url_input = QtWidgets.QLineEdit(self)
         form_layout.addRow('URL do vídeo do YouTube:', self.url_input)
 
-        self.format_combo = QtWidgets.QComboBox(self)
+        self.format_combo = QtWidgets.QComboBox(self) #Caixa de seleção do formato
         self.format_combo.addItems(['MP3', 'MP4'])
         form_layout.addRow('Formato:', self.format_combo)
 
         layout.addLayout(form_layout)
 
-        self.progress_bar = QProgressBar(self)
+        self.progress_bar = QProgressBar(self) #Barra de progressão
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
 
-        self.download_button = QtWidgets.QPushButton('Baixar e Converter', self)
+        self.download_button = QtWidgets.QPushButton('Baixar e Converter', self) #Botão de download
         self.download_button.clicked.connect(self.on_download_click)
         layout.addWidget(self.download_button)
         
         self.setLayout(layout)
         self.dark_mode()
-
-    def dark_mode(self):
+    
+    def dark_mode(self): #Função para GUI Dark Mode
         dark_mode_css = """
         QWidget {
             background-color: #2e2e2e;
@@ -101,11 +101,11 @@ class YouTubeToMP3Converter(QtWidgets.QWidget):
         }
         QProgressBar {
             background-color: #3e3e3e;
-            color: #66cc00;
+            color: #000000;
             border: 1px solid #5e5e5e;
         }
         QProgressBar::chunk {
-            background-color: #6a6a6a;
+            background-color: #4de800;
         }
         QMessageBox {
             background-color: #2e2e2e;
@@ -120,7 +120,8 @@ class YouTubeToMP3Converter(QtWidgets.QWidget):
     def show_message(self, message):
         QtWidgets.QMessageBox.information(self, "Informação", message)
 
-    def on_download_click(self):
+    
+    def on_download_click(self): #Função para escolher onde salvar o arquivo escolhido
         url = self.url_input.text()
         format_choice = self.format_combo.currentText()
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Escolha o diretório")
